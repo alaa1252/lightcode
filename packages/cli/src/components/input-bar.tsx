@@ -34,13 +34,6 @@ export function InputBar({ onSubmit, disabled = false}: props) {
     setSelectedIndex,
   } = useCommandMenu();
 
-  const handleCommandExecute = useCallback(
-  (index: number) => {
-    const command = resolveCommand(index);
-    handleCommand(command);
-  },
-  [],
-);
 
   const handleTextareaContentChange = useCallback(() => {
   const textarea = textareaRef.current;
@@ -103,6 +96,14 @@ export function InputBar({ onSubmit, disabled = false}: props) {
 
   handleSubmit();
 };
+
+const handleCommandExecute = useCallback(
+  (index: number) => {
+    const command = resolveCommand(index);
+    handleCommand(command);
+  },
+  [resolveCommand, handleCommand],
+);
     return(
         <box width="100%" alignItems="center">
             <box width="100%" border={["left"]} borderColor={"cyan"}>
