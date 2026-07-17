@@ -4,6 +4,7 @@ import { TextAttributes, RGBA } from "@opentui/core";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import type { DialogConfig } from "./types";
 import { useKeyboardLayer } from "../keyboard-layer";
+import { useTheme } from "../theme";
 
 export type DialogContextValue = {
   open: (config: DialogConfig) => void;
@@ -14,22 +15,18 @@ const DialogContext = createContext<DialogContextValue | null>(null);
 
 export function useDialog(): DialogContextValue {
   const value = useContext(DialogContext);
-
   if (!value) {
     throw new Error("useDialog must be used within a DialogProvider");
   }
-
   return value;
-}
+};
 
 type DialogProviderProps = {
   children: ReactNode;
 };
 
 export function DialogProvider({ children }: DialogProviderProps) {
-  const [currentDialog, setCurrentDialog] = useState<DialogConfig | null>(
-    null
-  );
+  const [currentDialog, setCurrentDialog] = useState<DialogConfig | null>(null);
   const { push, pop } = useKeyboardLayer();
 
   const close = useCallback(() => {
@@ -54,14 +51,11 @@ export function DialogProvider({ children }: DialogProviderProps) {
   };
 
   return (
-  <DialogContext.Provider value={value}>
-    {children}
-    <Dialog
-      currentDialog={currentDialog}
-      close={close}
-    />
-  </DialogContext.Provider>
-);
+    <DialogContext.Provider value={value}>
+      {children}
+      <Dialog currentDialog={currentDialog} close={close} />
+    </DialogContext.Provider>
+  );
 };
 
 type DialogProps = {
@@ -72,6 +66,7 @@ type DialogProps = {
 function Dialog({ currentDialog, close }: DialogProps) {
   const { isTopLayer } = useKeyboardLayer();
   const dimensions = useTerminalDimensions();
+  const { colors } = useTheme();
 
   useKeyboard((key) => {
     if (!currentDialog || !isTopLayer("dialog")) return;
@@ -80,52 +75,49 @@ function Dialog({ currentDialog, close }: DialogProps) {
       close();
     }
   });
+
   if (!currentDialog) {
-  return null;
-}
+    return null;
+  }
 
-const { title, children } = currentDialog;
+  const { title, children } = currentDialog;
 
-return (
-  <box
-    position="absolute"
-    left={0}
-    top={0}
-    width={dimensions.width}
-    height={dimensions.height}
-    justifyContent="center"
-    alignItems="center"
-    backgroundColor={RGBA.fromInts(0, 0, 0, 150)}
-    zIndex={100}
-    onMouseDown={() => close()}
-  >
+  return (
     <box
-    width={Math.min(60, dimensions.width - 4)}
-    height="auto"
-    backgroundColor="#1A1A24"
-    paddingX={4}
-    paddingY={1}
-    flexDirection="column"
-    gap={1}
-    onMouseDown={(e) => e.stopPropagation()}
-  >
-      <box
-      paddingBottom={1}
-      flexDirection="row"
+      position="absolute"
+      left={0}
+      top={0}
+      width={dimensions.width}
+      height={dimensions.height}
+      justifyContent="center"
       alignItems="center"
-      justifyContent="space-between"
+      backgroundColor={RGBA.fromInts(0, 0, 0, 150)}
+      zIndex={100}
+      onMouseDown={() => close()}
     >
-      <text attributes={TextAttributes.BOLD}>{title}</text>
-
-      <text
-        attributes={TextAttributes.DIM}
-        onMouseDown={() => close()}
+      <box
+        width={Math.min(60, dimensions.width - 4)}
+        height="auto"
+        backgroundColor={colors.dialogSurface}
+        paddingX={4}
+        paddingY={1}
+        flexDirection="column"
+        gap={1}
+        onMouseDown={(e) => e.stopPropagation()}
       >
-        esc
-      </text>
+        <box
+          paddingBottom={1}
+          flexDirection="row"
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          <text attributes={TextAttributes.BOLD}>{title}</text>
+          <text attributes={TextAttributes.DIM} onMouseDown={() => close()}>
+            esc
+          </text>
+        </box>
+        <box flexGrow={1}>{children}</box>
+      </box>
     </box>
-    <box flexGrow={1}>{children}</box>
-  </box>
-  </box>
-);
-}
+  );
+};
